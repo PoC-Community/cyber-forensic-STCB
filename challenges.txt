@@ -1,0 +1,13 @@
+Challenge 1 - Who uses this machine?
+------------------------------------
+I executed `.venv/bin/vol -f vmss.core windows.registry.hivelist` to enumerate NTUSER hives kept in RAM and observed only `C:\Users\PoC_W0rk$Hop\ntuser.dat` and `C:\Users\BrunoDeChezPoC\ntuser.dat` besides system/service profiles, which implies these two user sessions were active.
+Then I confirmed the SAM contents with `.venv/bin/vol -f vmss.core windows.registry.printkey --key "SAM\\Domains\\Account\\Users\\Names"`, which listed only the default Windows accounts plus the same two PoC identities.
+Flag: PoC{PoC_W0rk$Hop,BrunoDeChezPoC}
+
+Challenge 2 - Suspicious connection
+-----------------------------------
+To triage outbound traffic I ran `.venv/bin/vol -f vmss.core windows.netscan | rg "7912"` which highlighted several `python.exe` sockets owned by PID 7912 talking to `35.246.6.109:443` (multiple CLOSED TCP entries plus related UDP sockets).
+That remote belongs to `www.poc-innovation.fr`, and the repeated hits line up with the “requested several times” hint.
+Establishing the owner was straightforward with `.venv/bin/vol -f vmss.core windows.cmdline`, because PID 7912 shows the command `C:\Users\BrunoDeChezPoC\AppData\Local\Programs\Python\Python38\python.exe BadProgram.py.txt`, so it is Bruno’s sandbox Python interpreter driving the traffic.
+For completeness I also searched the process memory via `.venv/bin/vol -f vmss.core windows.vadregexscan --pid 7912 --pattern "poc-innovation"` and got dozens of hits on the string `poc-innovation` inside that Python address space (for example at VA `0x21f5f825d0e`), proving that the connector stores the target hostname in RAM.
+Flag: PoC{7912+BrunoDeChezPoC}
