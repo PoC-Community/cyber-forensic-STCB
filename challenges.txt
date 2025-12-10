@@ -11,3 +11,9 @@ That remote belongs to `www.poc-innovation.fr`, and the repeated hits line up wi
 Establishing the owner was straightforward with `.venv/bin/vol -f vmss.core windows.cmdline`, because PID 7912 shows the command `C:\Users\BrunoDeChezPoC\AppData\Local\Programs\Python\Python38\python.exe BadProgram.py.txt`, so it is Bruno’s sandbox Python interpreter driving the traffic.
 For completeness I also searched the process memory via `.venv/bin/vol -f vmss.core windows.vadregexscan --pid 7912 --pattern "poc-innovation"` and got dozens of hits on the string `poc-innovation` inside that Python address space (for example at VA `0x21f5f825d0e`), proving that the connector stores the target hostname in RAM.
 Flag: PoC{7912+BrunoDeChezPoC}
+
+Challenge 3 - Command line analysis
+-----------------------------------
+Using `.venv/bin/vol -f vmss.core windows.cmdline --pid 7912` I recovered the exact invocation of the culprit process: `C:\Users\BrunoDeChezPoC\AppData\Local\Programs\Python\Python38\python.exe BadProgram.py.txt`.
+I hashed that literal command line with `python3 - <<'PY' ... hashlib.sha1(... )` and obtained `edc88358ab58eda9f5484e546980f8fc5e76f124`.
+Flag: PoC{edc88358ab58eda9f5484e546980f8fc5e76f124}
